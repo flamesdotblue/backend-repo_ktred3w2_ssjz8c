@@ -1,48 +1,73 @@
-"""
-Database Schemas
+from typing import Optional, Dict, Any, List
+from pydantic import BaseModel, EmailStr, Field
 
-Define your MongoDB collection schemas here using Pydantic models.
-These schemas are used for data validation in your application.
 
-Each Pydantic model represents a collection in your database.
-Model name is converted to lowercase for the collection name:
-- User -> "user" collection
-- Product -> "product" collection
-- BlogPost -> "blogs" collection
-"""
+class UserRegister(BaseModel):
+    email: EmailStr
+    password: str
+    name: str = Field(..., min_length=2, max_length=80)
+    pan: str = Field(..., min_length=10, max_length=10, regex=r"^[A-Z]{5}[0-9]{4}[A-Z]$")
 
-from pydantic import BaseModel, Field
-from typing import Optional
 
-# Example schemas (replace with your own):
+class UserLogin(BaseModel):
+    email: EmailStr
+    password: str
+
 
 class User(BaseModel):
-    """
-    Users collection schema
-    Collection name: "user" (lowercase of class name)
-    """
-    name: str = Field(..., description="Full name")
-    email: str = Field(..., description="Email address")
-    address: str = Field(..., description="Address")
-    age: Optional[int] = Field(None, ge=0, le=120, description="Age in years")
-    is_active: bool = Field(True, description="Whether user is active")
+    id: Optional[str]
+    email: EmailStr
+    name: str
+    pan: str
 
-class Product(BaseModel):
-    """
-    Products collection schema
-    Collection name: "product" (lowercase of class name)
-    """
-    title: str = Field(..., description="Product title")
-    description: Optional[str] = Field(None, description="Product description")
-    price: float = Field(..., ge=0, description="Price in dollars")
-    category: str = Field(..., description="Product category")
-    in_stock: bool = Field(True, description="Whether product is in stock")
 
-# Add your own schemas here:
-# --------------------------------------------------
+class Allocation(BaseModel):
+    sectors: Dict[str, float]  # keys like education, health, infra, defense, other (percentages summing ~100)
 
-# Note: The Flames database viewer will automatically:
-# 1. Read these schemas from GET /schema endpoint
-# 2. Use them for document validation when creating/editing
-# 3. Handle all database operations (CRUD) directly
-# 4. You don't need to create any database endpoints!
+
+class SaveAllocationRequest(BaseModel):
+    sectors: Dict[str, float]
+
+
+class Receipt(BaseModel):
+    id: Optional[str]
+    user_email: EmailStr
+    amount: int
+    currency: str = "INR"
+    regime: str
+    allocation: Dict[str, float]
+    payment_method: str  # demo | razorpay | phonepe
+    reference: Optional[str]  # e.g., order_id or txn id
+
+
+class DemoPayRequest(BaseModel):
+    amount: int
+    regime: str
+    allocation: Dict[str, float]
+
+
+class RazorpayOrderRequest(BaseModel):
+    amount: int  # in paise
+    currency: str = "INR"
+    receipt: Optional[str]
+    notes: Optional[Dict[str, Any]]
+
+
+class RazorpayOrderResponse(BaseModel):
+    id: str
+    amount: int
+    currency: str
+    status: str
+
+
+class TokenResponse(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
+
+
+class Message(BaseModel):
+    message: str
+
+
+class ReceiptsResponse(BaseModel):
+    items: List[Receipt]
